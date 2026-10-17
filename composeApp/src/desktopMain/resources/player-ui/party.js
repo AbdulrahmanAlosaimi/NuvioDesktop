@@ -263,10 +263,7 @@ const confirmPartyRemoval = member => showPartyConfirm({
   message: partyLabel("removeMessage"),
   confirmLabel: partyLabel("remove"),
   danger: true,
-  onConfirm: () => {
-    const index = partyMembers().findIndex(candidate => candidate.id === member.id);
-    if (index >= 0) send("partyRemoveMember", index);
-  },
+  onConfirm: () => send(`partyRemoveMember:${member.id}`, 0),
 });
 
 const buildPartyMembers = party => {

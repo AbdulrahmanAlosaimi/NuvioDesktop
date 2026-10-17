@@ -151,15 +151,19 @@ internal fun PlayerScreenRuntime.rememberPartyControlsState(): PlayerControlPart
 }
 
 internal fun PlayerScreenRuntime.handlePartyControlsEvent(type: String, value: Double): Boolean {
+    if (type.startsWith(REMOVE_MEMBER_EVENT)) {
+        val memberId = type.removePrefix(REMOVE_MEMBER_EVENT)
+        val party = PartyRepository.state.value.party
+        if (party != null && party.isHost && memberId != party.memberId && party.members.any { it.id == memberId }) {
+            PartyRepository.removeMember(memberId)
+        }
+        return true
+    }
     when (type) {
         "partyStart" -> startParty()
         "partyCopyInvite" -> copyPartyInvite()
         "partyHostOnly" -> PartyRepository.setHostOnly(value >= 0.5)
         "partySharing" -> PartyRepository.setSharing(value >= 0.5)
-        "partyRemoveMember" -> {
-            val member = PartyRepository.state.value.party?.members?.getOrNull(value.toInt()) ?: return true
-            PartyRepository.removeMember(member.id)
-        }
         "partyWatch" -> watchWithParty()
         "partySwitch" -> switchPartyMedia()
         "partyCatchUp" -> catchUpWithParty()
@@ -202,3 +206,5 @@ private fun partyControlLabels(): Map<String, String> = mapOf(
 )
 
 private fun String.initial(): String = trim().take(1).uppercase()
+
+private const val REMOVE_MEMBER_EVENT = "partyRemoveMember:"
