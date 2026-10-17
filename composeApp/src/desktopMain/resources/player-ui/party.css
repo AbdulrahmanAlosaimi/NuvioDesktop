@@ -746,6 +746,12 @@
   }
 }
 
+@media (max-width: 760px) {
+  .player-side-modal .party-panel {
+    width: 100vw;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .party-pill,
   .party-pill-text,
