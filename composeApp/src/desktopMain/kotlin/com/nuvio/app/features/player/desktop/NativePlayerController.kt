@@ -31,17 +31,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import java.awt.Component
-import java.awt.RenderingHints
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
-import java.awt.image.BufferedImage
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.net.URI
-import java.util.Base64
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
-import javax.imageio.ImageIO
 import javax.swing.SwingUtilities
 import kotlin.concurrent.Volatile
 
@@ -462,7 +454,15 @@ internal class NativePlayerController(
                 "speed=${stateWithVolume.playbackSpeedLabel} audioLabel=${stateWithVolume.audioLabel} " +
                 "subsLabel=${stateWithVolume.subtitlesLabel} fullscreen=$isFullscreen"
         }
-        NativePlayerBridge.updateControls(current, stateWithVolume.toControlsJson(isFullscreen))
+        NativePlayerBridge.updateControls(current, stateWithVolume.toControlsJson(isFullscreen, ::refreshControlsForImage))
+    }
+
+    private fun refreshControlsForImage() {
+        SwingUtilities.invokeLater {
+            if (releaseRequested) return@invokeLater
+            lastSentControlsStructureKey = null
+            updateControls(controlsState)
+        }
     }
 
     fun onDesktopFullscreenChanged() {
@@ -1249,7 +1249,7 @@ private data class NativeControlsStructureKey(
     val isInPip: Boolean,
 )
 
-private fun PlayerControlsState.toControlsJson(isFullscreen: Boolean): String =
+private fun PlayerControlsState.toControlsJson(isFullscreen: Boolean, onImageReady: () -> Unit): String =
     buildString {
         append('{')
         appendJsonField("title", title)
@@ -1627,40 +1627,14 @@ private fun PlayerControlsState.toControlsJson(isFullscreen: Boolean): String =
         append(',')
         appendJsonField("notificationToken", notificationToken)
         append(",\"party\":")
-        append(partyJson.encodeToString(PlayerControlPartyState.serializer(), party.withWebviewImages()))
+        append(partyJson.encodeToString(PlayerControlPartyState.serializer(), party.withWebviewImages(onImageReady)))
         append('}')
     }
 
 private val partyJson = Json { encodeDefaults = true }
 
-private val webviewImages = ConcurrentHashMap<String, String>()
-
-private fun PlayerControlPartyState.withWebviewImages(): PlayerControlPartyState =
-    copy(
-        profile = profile.copy(imageUrl = profile.imageUrl.toWebviewImageUrl()),
-        members = members.map { it.copy(imageUrl = it.imageUrl.toWebviewImageUrl()) },
-    )
-
-private fun String.toWebviewImageUrl(): String {
-    if (!startsWith("file:", ignoreCase = true)) return this
-    return webviewImages.getOrPut(this) {
-        runCatching {
-            val source = ImageIO.read(File(URI(this))) ?: return@runCatching ""
-            val side = minOf(source.width, source.height)
-            val left = (source.width - side) / 2
-            val top = (source.height - side) / 2
-            val size = 112
-            val scaled = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
-            scaled.createGraphics().apply {
-                setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
-                drawImage(source, 0, 0, size, size, left, top, left + side, top + side, null)
-                dispose()
-            }
-            val bytes = ByteArrayOutputStream().also { ImageIO.write(scaled, "png", it) }.toByteArray()
-            "data:image/png;base64," + Base64.getEncoder().encodeToString(bytes)
-        }.getOrDefault("")
-    }
-}
+private fun PlayerControlPartyState.withWebviewImages(onImageReady: () -> Unit): PlayerControlPartyState =
+    copy(profile = profile.copy(imageUrl = if (active) "" else WebviewImages.resolve(profile.imageUrl, onImageReady)))
 
 private fun PlayerControlsState.nativeControlsStructureKey(): PlayerControlsState =
     copy(
