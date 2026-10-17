@@ -261,7 +261,7 @@ private fun NativePlayerSurface(
     LaunchedEffect(controller) {
         while (true) {
             onSnapshot(controller.snapshot())
-            delay(500L)
+            delay(250L)
         }
     }
 
