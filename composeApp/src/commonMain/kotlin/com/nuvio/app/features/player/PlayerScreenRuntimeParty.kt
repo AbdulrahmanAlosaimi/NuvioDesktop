@@ -303,6 +303,7 @@ internal fun PlayerScreenRuntime.BindPartyEffects() {
     }
 
     LaunchedEffect(Unit) {
+        if (isDesktop) return@LaunchedEffect
         AppForegroundMonitor.events().collect { visibility ->
             partyAppInBackground = visibility == AppVisibility.Background
         }
