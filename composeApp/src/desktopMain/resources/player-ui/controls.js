@@ -3212,6 +3212,7 @@ window.playerControls = nextState => {
   const previousSelectedSubtitleLanguageKey = state.selectedSubtitleLanguageKey || "__off__";
   const previousSelectedSubtitleOptionId = state.selectedSubtitleOptionId || "";
   const previousParty = state.party;
+  const replayingParty = !hasReceivedPlayerControls;
   const currentPlaybackState = pendingIsPlaying === null
     ? state.isPlaying
     : pendingIsPlaying;
@@ -3241,7 +3242,7 @@ window.playerControls = nextState => {
   if (notificationToken !== previousNotificationToken) {
     showPlayerToast(state.notificationMessage);
   }
-  applyPartyControls(previousParty);
+  if (!replayingParty) applyPartyControls(previousParty);
   if (state.showP2pConsent && activeModal !== "p2pConsent") {
     openPlayerModal("p2pConsent");
   } else if (!state.showP2pConsent && activeModal === "p2pConsent") {
