@@ -444,7 +444,7 @@ const applyPartyControls = previous => {
   if ((Number(party.messageToken) || 0) !== (Number(before.messageToken) || 0) && message) {
     showPlayerToast(message, { icon: "icon-party", durationMs: partyMessageDurationMs });
   }
-  if ((Number(party.panelToken) || 0) !== (Number(before.panelToken) || 0) && activeModal !== "party") {
+  if ((Number(party.panelToken) || 0) !== (Number(before.panelToken) || 0) && activeModal !== "party" && !state.isInPip) {
     openPlayerModal("party");
   }
   if (!party.active && before.active) closePartyConfirm();
