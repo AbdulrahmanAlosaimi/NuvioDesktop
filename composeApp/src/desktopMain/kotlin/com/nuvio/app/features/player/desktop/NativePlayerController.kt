@@ -561,8 +561,8 @@ internal class NativePlayerController(
             "volumeChange" -> setFallbackVolume(value.toFloat())
             "volumeChangeTemporary" -> setTemporaryVolume(value.toFloat())
             "setPlaybackSpeed" -> {
-                val speed = value.toFloat()
-                setPlaybackSpeed(speed)
+                if (onEvent(type, value)) return
+                setPlaybackSpeed(value.toFloat())
             }
             else -> {
                 val eventHandled = onEvent(type, value)
