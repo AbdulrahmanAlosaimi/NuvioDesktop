@@ -2637,6 +2637,16 @@ const keepChromeVisibleFromKeyboard = () => {
 let fineSeekTimer = 0;
 let fineSeekAccumulatedMs = 0;
 let fineSeekDirection = null;
+let partySeekTimer = 0;
+const partySeekSettleMs = 300;
+
+const finishPartySeek = () => {
+  partySeekTimer = 0;
+  isScrubbing = false;
+  state.positionMs = scrubPositionMs;
+  send("scrubFinish", scrubPositionMs);
+  render();
+};
 
 const fineSeek = isForward => {
   const direction = isForward ? "forward" : "backward";
@@ -2649,7 +2659,8 @@ const fineSeek = isForward => {
     fineSeekAccumulatedMs = stepMs;
   }
 
-  const currentPosMs = Math.max(0, Number(state.positionMs) || 0);
+  const partySeek = Boolean(partySeekTimer || currentParty().synced);
+  const currentPosMs = Math.max(0, Number(partySeekTimer ? scrubPositionMs : state.positionMs) || 0);
   const durationMs = Math.max(0, Number(state.durationMs) || 0);
   const bufferedPositionMs = Math.max(0, Number(state.bufferedPositionMs) || 0);
   const targetPosMs = Math.max(0, durationMs > 0 ? Math.min(durationMs, currentPosMs + stepMs) : currentPosMs + stepMs);
@@ -2661,7 +2672,15 @@ const fineSeek = isForward => {
   const sign = deltaSec > 0 ? "+" : "";
   showPlayerToast(`${sign}${deltaSec}s`);
 
-  send("scrubFinish", targetPosMs);
+  if (partySeek) {
+    isScrubbing = true;
+    scrubPositionMs = targetPosMs;
+    send("scrubChange", targetPosMs);
+    window.clearTimeout(partySeekTimer);
+    partySeekTimer = window.setTimeout(finishPartySeek, partySeekSettleMs);
+  } else {
+    send("scrubFinish", targetPosMs);
+  }
 
   if (fineSeekTimer) {
     window.clearTimeout(fineSeekTimer);
