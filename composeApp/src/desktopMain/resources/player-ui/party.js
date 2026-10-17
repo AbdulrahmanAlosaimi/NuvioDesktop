@@ -3,6 +3,7 @@ const partyPill = document.getElementById("partyPill");
 const partyPillStack = document.getElementById("partyPillStack");
 const partyPillText = document.getElementById("partyPillText");
 const partyModal = document.getElementById("partyModal");
+const partyPanel = partyModal.querySelector(".party-panel");
 const partyPanelTitle = document.getElementById("partyPanelTitle");
 const partyCloseButton = document.getElementById("partyCloseButton");
 const partyBody = document.getElementById("partyBody");
@@ -185,6 +186,7 @@ const showPartyConfirm = ({ title, message, confirmLabel, danger, onConfirm }) =
   partyConfirmAccept.textContent = confirmLabel || "";
   partyConfirmAccept.classList.toggle("danger", Boolean(danger));
   partyConfirmAccept.classList.toggle("primary", !danger);
+  partyPanel.inert = true;
   partyConfirm.hidden = false;
   partyConfirmAccept.focus({ preventScroll: true });
 };
@@ -192,9 +194,10 @@ const showPartyConfirm = ({ title, message, confirmLabel, danger, onConfirm }) =
 const closePartyConfirm = () => {
   partyConfirmHandler = null;
   partyConfirm.hidden = true;
+  partyPanel.inert = false;
 };
 
-const isPartyConfirmOpen = () => !partyConfirm.hidden;
+const isPartyConfirmOpen = () => activeModal === "party" && !partyConfirm.hidden;
 
 const buildPartyStart = party => {
   const content = partyElement("div", "party-start");
