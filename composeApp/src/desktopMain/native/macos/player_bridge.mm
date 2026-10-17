@@ -1138,6 +1138,7 @@ static void setMpvOptionString(mpv_handle *mpv, const char *name, const char *va
     std::atomic<double> _cachedPositionSeconds;
     std::mutex _cachedPositionLock;
     double _cachedPositionStamp;
+    uint64_t _cachedPositionGeneration;
     std::atomic<double> _cachedCacheAheadSeconds;
     std::atomic<double> _cachedSpeed;
     std::atomic_bool _cachedPaused;
@@ -1818,6 +1819,7 @@ static void setMpvOptionString(mpv_handle *mpv, const char *name, const char *va
                 return;
             }
 
+            uint64_t positionGeneration = [self cachedPositionGeneration];
             double duration = [self doubleProperty:"duration" fallback:0.0];
             double position = [self doubleProperty:"time-pos" fallback:0.0];
             double positionReadAt = CACurrentMediaTime();
@@ -1836,6 +1838,7 @@ static void setMpvOptionString(mpv_handle *mpv, const char *name, const char *va
             [self updateCachedDuration:duration
                               position:position
                         positionReadAt:positionReadAt
+                    positionGeneration:positionGeneration
                             cacheAhead:cacheAhead
                                 paused:paused
                                  loading:loading
@@ -2333,6 +2336,12 @@ static void nuvioMpvWakeup(void *ctx) {
     std::lock_guard<std::mutex> guard(_cachedPositionLock);
     _cachedPositionSeconds.store(std::isfinite(seconds) ? fmax(seconds, 0.0) : 0.0);
     _cachedPositionStamp = stamp;
+    _cachedPositionGeneration += 1;
+}
+
+- (uint64_t)cachedPositionGeneration {
+    std::lock_guard<std::mutex> guard(_cachedPositionLock);
+    return _cachedPositionGeneration;
 }
 
 - (double)estimatedPositionSeconds {
@@ -2417,18 +2426,22 @@ static void nuvioMpvWakeup(void *ctx) {
 - (void)updateCachedDuration:(double)duration
                     position:(double)position
               positionReadAt:(double)positionReadAt
+          positionGeneration:(uint64_t)positionGeneration
                   cacheAhead:(double)cacheAhead
                       paused:(BOOL)paused
                      loading:(BOOL)loading
                        ended:(BOOL)ended
                        speed:(double)speed {
     _cachedDurationSeconds.store(std::isfinite(duration) ? fmax(duration, 0.0) : 0.0);
-    [self storeCachedPosition:position at:positionReadAt];
     _cachedCacheAheadSeconds.store(std::isfinite(cacheAhead) ? fmax(cacheAhead, 0.0) : 0.0);
-    _cachedSpeed.store(std::isfinite(speed) ? fmax(0.25, fmin(4.0, speed)) : 1.0);
-    _cachedPaused.store(paused);
     _cachedLoading.store(loading);
     _cachedEnded.store(ended);
+    std::lock_guard<std::mutex> guard(_cachedPositionLock);
+    if (_cachedPositionGeneration != positionGeneration) return;
+    _cachedPositionSeconds.store(std::isfinite(position) ? fmax(position, 0.0) : 0.0);
+    _cachedPositionStamp = positionReadAt;
+    _cachedSpeed.store(std::isfinite(speed) ? fmax(0.25, fmin(4.0, speed)) : 1.0);
+    _cachedPaused.store(paused);
 }
 
 - (NSString *)audioTracksJson {
