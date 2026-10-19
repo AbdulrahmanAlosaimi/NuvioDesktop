@@ -54,4 +54,14 @@ class PreferredAudioTrackTest {
 
         assertEquals(-1, findPreferredAudioTrackIndex(tracks, listOf("cs", "sk")))
     }
+
+    @Test
+    fun untaggedTrackIsMatchedByTitle() {
+        val tracks = listOf(
+            AudioTrack(0, "1", "French", null),
+            AudioTrack(1, "2", "English 5.1", null),
+        )
+
+        assertEquals(1, findPreferredAudioTrackIndex(tracks, listOf("en")))
+    }
 }
