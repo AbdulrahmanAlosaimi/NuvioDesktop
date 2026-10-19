@@ -258,6 +258,7 @@ internal class PlayerScreenRuntime(
     var partyMessageToken by mutableStateOf(0L)
     var copyPartyInvite: () -> Unit = {}
     var showPartyChat by mutableStateOf(false)
+    var partyChatVisible by mutableStateOf(false)
     var partyBehind by mutableStateOf(false)
     var partyBehindMs by mutableStateOf<Long?>(null)
     var partyRateNudge: Float? = null
