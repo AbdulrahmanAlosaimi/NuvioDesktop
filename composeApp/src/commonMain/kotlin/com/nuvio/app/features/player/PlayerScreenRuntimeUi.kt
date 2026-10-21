@@ -253,6 +253,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         else -> ""
     }
     val partyControls = if (isDesktop) rememberPartyControlsState() else PlayerControlPartyState()
+    val playerBadges = if (isDesktop) rememberPlayerBadges() else emptyList()
     val playerControlsState = PlayerControlsState(
         title = title,
         episodeText = episodeText,
@@ -647,7 +648,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
     val isInPip = rememberIsInPictureInPicture()
     val partyState by PartyRepository.state.collectAsStateWithLifecycle()
     val partyActive = partyState.party != null
-    val playerBadges = rememberPlayerBadges()
+    val playerBadges = if (isDesktop) emptyList() else rememberPlayerBadges()
     AnimatedVisibility(
         visible = (controlsVisible || showParentalGuide) && !playerControlsLocked && !isInPip,
         enter = fadeIn(),

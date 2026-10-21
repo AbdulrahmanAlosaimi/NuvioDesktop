@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.features.streams.StreamBadge
+import com.nuvio.app.isDesktop
 import com.nuvio.app.features.streams.StreamBadgeChipSize
 import com.nuvio.app.features.streams.StreamBadgeImage
 import com.nuvio.app.features.streams.StreamBadgeMatcher
@@ -25,7 +26,7 @@ internal fun PlayerScreenRuntime.rememberPlayerBadges(): List<StreamBadge> {
     if (!settings.showInPlayer) return emptyList()
     val controller = playerController
     LaunchedEffect(controller, activeSourceUrl, selectedAudioIndex, controlsVisible, playbackSnapshot.isLoading) {
-        if (controller != null && controlsVisible && !playbackSnapshot.isLoading) {
+        if (controller != null && (controlsVisible || isDesktop) && !playbackSnapshot.isLoading) {
             streamMediaInfo = controller.getMediaInfo()
         }
     }
